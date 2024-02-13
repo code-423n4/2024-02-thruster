@@ -59,14 +59,12 @@ Some of the checklists in this doc are for **C4 (🐺)** and some of them are fo
 ---
 
 # Thruster audit details
-- Total Prize Pool: $40200 in USDC
-  - HM awards: $31400 in USDC
-  - Analysis awards: $1400 in USDC
+- Total Prize Pool: $40,200 in USDC
+  - HM awards: $31,400 in USDC
+  - Analysis awards: $1,400 in USDC
   - QA awards: $700 in USDC
- 
   - Gas awards: $700 in USDC
-  - Judge awards: $5500 in USDC
-  - Lookout awards: XXX XXX USDC (Notion: Sum of Pre-sort fee + Pre-sort early bonus)
+  - Judge awards: $5,500 in USDC
   - Scout awards: $500 in USDC
  
 - Join [C4 Discord](https://discord.gg/code4rena) to register
@@ -154,20 +152,20 @@ _Note for C4 wardens: Anything included in this `Automated Findings / Publicly K
 
 ```
 - If you have a public code repo, please share it here:  
-- How many contracts are in scope?:   
-- Total SLoC for these contracts?:  
-- How many external imports are there?:  
-- How many separate interfaces and struct definitions are there for the contracts within scope?:  
-- Does most of your code generally use composition or inheritance?:   
-- How many external calls?:   
-- What is the overall line coverage percentage provided by your tests?:
-- Is this an upgrade of an existing system?:
-- Check all that apply (e.g. timelock, NFT, AMM, ERC20, rollups, etc.): 
-- Is there a need to understand a separate part of the codebase / get context in order to audit this part of the protocol?:   
+- How many contracts are in scope?: 9  
+- Total SLoC for these contracts?: 1416 
+- How many external imports are there?: 10  
+- How many separate interfaces and struct definitions are there for the contracts within scope?: 10  
+- Does most of your code generally use composition or inheritance?: Inheritance   
+- How many external calls?: 1   
+- What is the overall line coverage percentage provided by your tests?: 0
+- Is this an upgrade of an existing system?: True - Fork of Uniswap V2 and V3
+- Check all that apply (e.g. timelock, NFT, AMM, ERC20, rollups, etc.): AMM 
+- Is there a need to understand a separate part of the codebase / get context in order to audit this part of the protocol?: False   
 - Please describe required context:   
-- Does it use an oracle?:  
-- Describe any novel or unique curve logic or mathematical models your code uses: 
-- Is this either a fork of or an alternate implementation of another project?:   
+- Does it use an oracle?: No 
+- Describe any novel or unique curve logic or mathematical models your code uses: Uniswap V2 and V3 math 
+- Is this either a fork of or an alternate implementation of another project?: Fork of Uniswap V2 and V3   
 - Does it use a side-chain?:
 - Describe any specific areas you would like addressed:
 ```
