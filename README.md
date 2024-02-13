@@ -70,8 +70,8 @@ Some of the checklists in this doc are for **C4 (🐺)** and some of them are fo
 - Join [C4 Discord](https://discord.gg/code4rena) to register
 - Submit findings [using the C4 form](https://code4rena.com/contests/2024-02-thruster/submit)
 - [Read our guidelines for more details](https://docs.code4rena.com/roles/wardens)
-- Starts February 15, 2024 20:00 UTC
-- Ends February 22, 2024 20:00 UTC
+- Starts February 16, 2024 20:00 UTC
+- Ends February 23, 2024 20:00 UTC
 
 ## This is a Private audit
 
