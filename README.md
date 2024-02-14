@@ -59,8 +59,8 @@ Some of the checklists in this doc are for **C4 (🐺)** and some of them are fo
 ---
 
 # Thruster audit details
-- Total Prize Pool: $40,200 in USDC
-  - HM awards: $31,400 in USDC
+- Total Prize Pool: $34,500 in USDC
+  - HM awards: $25,700 in USDC
   - Analysis awards: $1,400 in USDC
   - QA awards: $700 in USDC
   - Gas awards: $700 in USDC
