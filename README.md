@@ -76,7 +76,6 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 | [thruster-cfmm/contracts/ThrusterPair.sol] | 249 | The core liquidity pool itself, also functions as a fungible token, combines both UniswapV2Pair and UniswapV2ERC20 | OpenZeppelin
 | [thruster-cfmm/contracts/ThrusterYield.sol] | 47 | A contract to opt the contract into Blast specific yield claiming and gas claiming | Blast
 | [thruster-cfmm/contracts/ThrusterGas.sol] | 27 | A contract to opt the contract only into gas claiming for Blast | Blast
-| [thruster-cfmm/libraries/ThrusterLibrary.sol] | 89 | A library contract that includes a function for determinsitic computation of pair addresses | None
 | [thruster-treasure/contracts/ThrusterTreasure.sol] | 207 | A lottery drawing contract using Pyth entropy and Merkle Roots | Pyth, OpenZeppelin
 
 ## Out of scope
@@ -115,7 +114,7 @@ I confirm the information below
 ```
 - If you have a public code repo, please share it here:  
 - How many contracts are in scope?: 11 
-- Total SLoC for these contracts?: ~1416 
+- Total SLoC for these contracts?: 1465
 - How many external imports are there?: 10+ (didn't really count)
 - How many separate interfaces and struct definitions are there for the contracts within scope?: 10+ (didn't really count) 
 - Does most of your code generally use composition or inheritance?: Inheritance   
