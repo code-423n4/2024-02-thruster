@@ -77,6 +77,7 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 | [thruster-cfmm/contracts/ThrusterYield.sol] | 47 | A contract to opt the contract into Blast specific yield claiming and gas claiming | Blast
 | [thruster-cfmm/contracts/ThrusterGas.sol] | 27 | A contract to opt the contract only into gas claiming for Blast | Blast
 | [thruster-cfmm/libraries/ThrusterLibrary.sol] | 89 | A library contract that includes a function for determinsitic computation of pair addresses | None
+| [thruster-treasure/contracts/ThrusterTreasure.sol] | 207 | A lottery drawing contract using Pyth entropy and Merkle Roots | Pyth, OpenZeppelin
 
 ## Out of scope
 
