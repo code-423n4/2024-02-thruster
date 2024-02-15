@@ -1,4 +1,5 @@
 # Thruster audit details
+
 - Total Prize Pool: $25,200 in USDC
   - HM awards: $18,700 in USDC
   - Analysis awards: $1,000 in USDC
@@ -6,7 +7,7 @@
   - Gas awards: $500 in USDC
   - Judge awards: $4,000 in USDC
   - Scout awards: $500 in USDC
- 
+
 - Join [C4 Discord](https://discord.gg/code4rena) to register
 - Submit findings [using the C4 form](https://code4rena.com/contests/2024-02-thruster/submit)
 - [Read our guidelines for more details](https://docs.code4rena.com/roles/wardens)
@@ -24,8 +25,6 @@ This audit repo and its Discord channel are accessible to **certified wardens on
 
 Please review the following confidentiality requirements carefully, and if anything is unclear, ask questions in the private audit channel in the C4 Discord.
 
->>DRAG IN CLASSIFIED IMAGE HERE
-
 ## Automated Findings / Publicly Known Issues
 
 - The 4naly3er report for `thruster-clmm` can be found [here](https://github.com/code-423n4/2024-02-thruster/blob/main/4naly3er-report-thruster-clmm.md).
@@ -35,9 +34,7 @@ Please review the following confidentiality requirements carefully, and if anyth
 - The [slither.txt](https://github.com/code-423n4/2024-02-thruster/blob/main/thruster-protocol/thruster-cfmm/slither.txt) output for `thruster-cfmm`
 - The [slither.txt](https://github.com/code-423n4/2024-02-thruster/blob/main/thruster-protocol/thruster-treasure/slither.txt) output for `thruster-treasure`
 
-
-_Note for C4 wardens: Anything included in this `Automated Findings / Publicly Known Issues` section is considered a publicly known issue and is ineligible for awards._
-
+*Note for C4 wardens: Anything included in this `Automated Findings / Publicly Known Issues` section is considered a publicly known issue and is ineligible for awards.*
 
 # Overview
 
@@ -49,11 +46,10 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 
 ## Links
 
-- **Documentation:** https://docs.thruster.finance
-- **Website:** https://www.thruster.finance
-- **Twitter:** https://www.x.com/thrusterfi
-- **Discord:** https://www.discord.gg/invite/thrusterfi
-
+- **Documentation:** <https://docs.thruster.finance>
+- **Website:** <https://www.thruster.finance>
+- **Twitter:** <https://www.x.com/thrusterfi>
+- **Discord:** <https://www.discord.gg/invite/thrusterfi>
 
 # Scope
 
@@ -73,6 +69,7 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 | [thruster-cfmm/contracts/ThrusterGas.sol](https://github.com/code-423n4/2024-02-thruster/blob/main/thruster-protocol/thruster-fmm/contracts/ThrusterGas.sol) | 27 | A contract to opt the contract only into gas claiming for Blast | Blast
 | [thruster-cfmm/contracts/libraries/ThrusterLibrary.sol](https://github.com/code-423n4/2024-02-thruster/blob/main/thruster-protocol/thruster-cfmm/contracts/libraries/ThrusterLibrary.sol) | 89 | A library contract that includes a function for deterministic computation of pair addresses | None
 | [thruster-treasure/contracts/ThrusterTreasure.sol](https://github.com/code-423n4/2024-02-thruster/blob/main/thruster-protocol/thruster-treasure/contracts/ThrusterTreasure.sol) | 207 | A lottery drawing contract using Pyth entropy and Merkle Roots | Pyth, OpenZeppelin
+
 ## Out of scope
 
 - All contracts under `thruster-cfmm/contracts/libraries/*` except for ThrusterLibrary.sol
@@ -82,7 +79,6 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 - All contracts under `thruster-clmm/contracts/libraries/*` and `thruster-clmm/contracts/lens/*` and `thruster-clmm/contracts/base/*`, these contracts had no changes aside from name changes
 - Any deployment errors are out of scope, e.g. incorrect constructor arguments. For example, we know that we need to use the `ThrusterPoolDeployer.sol` contract address instead of the `ThrusterPoolFactory.sol` contract address when initializing the `SwapRouter.sol`, `QuoterV2.sol` and `NonfungiblePositionManager.sol`.
 - MEV attacks are out of scope for this audit.
-
 
 # Additional Context
 
@@ -96,14 +92,17 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 - Treasure lottery is structured as users have the option to enter all their existing tickets for the current round or accumulate tickets. There is no option to partially enter tickets or choose specific numbers. It will also be possible for there to be no winners of the lottery, as it is possible to submit ghost tickets via the Merkle by the team.
 
 ## Attack ideas (Where to look for bugs)
+
 - ThrusterPool contract for price manipulation
 - NonfungiblePositionManager for improper access to liquidity positions
 - ThrusterPair contract for price manipulation on trades
 
 ## Main invariants
+
 - For ThrusterPair.sol the x * y = k invariant
 
-## Scoping Details 
+## Scoping Details
+
 ```
 - If you have a public code repo, please share it here:  
 - How many contracts are in scope?: 11 
@@ -123,10 +122,13 @@ Additionally, we include a single ThrusterTreasure.sol file that is used to perf
 - Does it use a side-chain?:
 - Describe any specific areas you would like addressed:
 ```
+
 # Thruster Protocol
+
 All repos are compatible with both Forge Foundry and Eth-Brownie compilation. However, `thruster-cfmm` is not compatible with `forge test` due to Solidity compiler version being too low.
 
 # Compile repositories
+
 ```bash
 cd thruster-cfmm && forge build
 cd ..
@@ -134,7 +136,9 @@ cd thruster-clmm && forge build
 cd ..
 cd thruster-treasure && npm i && forge build
 ```
+
 or
+
 ```bash
 cd thruster-cfmm && brownie compile
 cd ..
@@ -151,26 +155,29 @@ See the [ThrusterAudits_Changelog.pdf](https://github.com/code-423n4/2024-02-thr
 The main files we want to get audited are:
 
 From Thruster CLMM (Uniswap V3 Fork):
+
 - ThrusterPool.sol
 - ThrusterPoolFactory.sol
 - ThrusterPoolDeployer.sol
 - NonfungiblePositionManger.sol
 
 From Thruster CFMM (Uniswap V2 Fork):
+
 - ThrusterPair.sol
 - ThrusterFactory.sol
 
 From Thruster Treasure:
+
 - ThrusterTreasure.sol
 
 Blast specific:
+
 - ThrusterGas.sol
 - ThrusterYield.sol
 
 # Tests
 
 It is hard to run tests, as there is Blast specific code. The way we have been testing is by running scripts on the Blast Sepolia Testnet directly.
-
 
 ## Miscellaneous
 
