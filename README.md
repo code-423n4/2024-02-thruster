@@ -144,7 +144,7 @@ cd thruster-cfmm && brownie compile
 cd ..
 cd thruster-clmm && brownie compile
 cd ..
-cd thruster-treasure && npm i && brownie compile
+cd thruster-treasure && npm i && brownie pm install OpenZeppelin/openzeppelin-contracts@5.0.0 && brownie compile
 ```
 
 Two pull requests are opened titled `Diff to show the changes with the V2 contracts` and `Diff to show the changes with the V3 contracts`. These two PRs show the differences
