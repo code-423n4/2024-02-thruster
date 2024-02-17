@@ -14,9 +14,6 @@ contract ThrusterPoolFactory is IThrusterPoolFactory, NoDelegateCall, ThrusterGa
     /// @inheritdoc IThrusterPoolFactory
     address public override owner;
 
-    /// Points adminf or Blast points
-    address public override pointsAdmin;
-
     /// @inheritdoc IThrusterPoolFactory
     address public override deployer;
 
@@ -26,10 +23,9 @@ contract ThrusterPoolFactory is IThrusterPoolFactory, NoDelegateCall, ThrusterGa
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPool;
     mapping(address => bool) public poolExists;
 
-    constructor(address _owner, address _pointsAdmin) ThrusterGas(_owner) {
+    constructor(address _owner) ThrusterGas(_owner) {
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
-        pointsAdmin = _pointsAdmin;
 
         feeAmountTickSpacing[500] = 10;
         emit FeeAmountEnabled(500, 10);
