@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0 <0.8.0;
 
-import "contracts/libraries/FullMath.sol";
-import "contracts/libraries/FixedPoint128.sol";
-import "contracts/libraries/LiquidityMath.sol";
+import "./FullMath.sol";
+import "./FixedPoint128.sol";
+import "./LiquidityMath.sol";
 
 /// @title Position
 /// @notice Positions represent an owner address' liquidity between a lower and upper tick boundary

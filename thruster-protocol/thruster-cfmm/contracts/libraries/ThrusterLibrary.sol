@@ -25,7 +25,7 @@ library ThrusterLibrary {
                         hex"ff",
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"27abe505ff94bb2bb1409648799db3544c298d510167f37a3b81a984508dba6d" // init code hash
+                        hex"ccf872df471830af5eb8a3a0293a92146c157aa68d980a34add2d26663a4caff" // init code hash
                     )
                 )
             )

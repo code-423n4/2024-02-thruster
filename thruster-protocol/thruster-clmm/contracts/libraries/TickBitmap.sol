@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.5.0 <0.8.0;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity >=0.5.0;
 
-import "contracts/libraries/BitMath.sol";
+import "./BitMath.sol";
 
 /// @title Packed tick initialized state library
 /// @notice Stores a packed mapping of tick index to its initialized state

@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 /// @title Events emitted by a pool
 /// @notice Contains all events emitted by the pool
-interface IThrusterPoolEvents {
+interface IUniswapV3PoolEvents {
     /// @notice Emitted exactly once by a pool when #initialize is first called on the pool
     /// @dev Mint/Burn/Swap cannot be emitted by the pool before Initialize
     /// @param sqrtPriceX96 The initial sqrt price of the pool, as a Q64.96
@@ -101,7 +101,8 @@ interface IThrusterPoolEvents {
     /// @param observationCardinalityNextOld The previous value of the next observation cardinality
     /// @param observationCardinalityNextNew The updated value of the next observation cardinality
     event IncreaseObservationCardinalityNext(
-        uint16 observationCardinalityNextOld, uint16 observationCardinalityNextNew
+        uint16 observationCardinalityNextOld,
+        uint16 observationCardinalityNextNew
     );
 
     /// @notice Emitted when the protocol fee is changed by the pool
@@ -117,16 +118,4 @@ interface IThrusterPoolEvents {
     /// @param amount0 The amount of token0 protocol fees that is withdrawn
     /// @param amount0 The amount of token1 protocol fees that is withdrawn
     event CollectProtocol(address indexed sender, address indexed recipient, uint128 amount0, uint128 amount1);
-
-    /// @notice Emitted when the pool's gauge is set
-    /// @param gauge The address of the gauge
-    event SetGauge(address gauge);
-
-    /// @notice Claims yield for native ETH, WETH, USDB, and gas
-    /// @param recipient The address to which collected protocol fees should be sent
-    /// @param amountETH The amount of ETH to claim
-    /// @param amountWETH The amount of WETH to claim
-    /// @param amountUSDB The amount of USDB to claim
-    /// @param amountGas The amount of gas to claim
-    event ClaimYieldAll(address indexed recipient, uint256 amountETH, uint256 amountWETH, uint256 amountUSDB, uint256 amountGas);
 }

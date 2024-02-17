@@ -2,25 +2,24 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import "interfaces/INonfungiblePositionManager.sol";
-import "interfaces/INonfungibleTokenPositionDescriptor.sol";
-import "interfaces/IThrusterPool.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/libraries/FixedPoint128.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 
-import "contracts/ThrusterGas.sol";
-import "contracts/base/ERC721Permit.sol";
-import "contracts/base/LiquidityManagement.sol";
-import "contracts/base/Multicall.sol";
-import "contracts/base/PeripheryImmutableState.sol";
-import "contracts/base/PeripheryValidation.sol";
-import "contracts/base/PoolInitializer.sol";
-import "contracts/base/SelfPermit.sol";
-import "contracts/libraries/FixedPoint128.sol";
-import "contracts/libraries/FullMath.sol";
-import "contracts/libraries/PoolAddress.sol";
-import "contracts/libraries/PositionKey.sol";
+import "./interfaces/INonfungiblePositionManager.sol";
+import "./interfaces/INonfungibleTokenPositionDescriptor.sol";
+import "./libraries/PositionKey.sol";
+import "./libraries/PoolAddress.sol";
+import "./base/LiquidityManagement.sol";
+import "./base/PeripheryImmutableState.sol";
+import "./base/Multicall.sol";
+import "./base/ERC721Permit.sol";
+import "./base/PeripheryValidation.sol";
+import "./base/SelfPermit.sol";
+import "./base/PoolInitializer.sol";
 
 /// @title NFT positions
-/// @notice Wraps Thruster CLMM positions in the ERC721 non-fungible token interface
+/// @notice Wraps Uniswap V3 positions in the ERC721 non-fungible token interface
 contract NonfungiblePositionManager is
     INonfungiblePositionManager,
     Multicall,
@@ -29,10 +28,9 @@ contract NonfungiblePositionManager is
     PoolInitializer,
     LiquidityManagement,
     PeripheryValidation,
-    SelfPermit,
-    ThrusterGas
+    SelfPermit
 {
-    // details about the Thruster position
+    // details about the uniswap position
     struct Position {
         // the nonce for permits
         uint96 nonce;
@@ -70,10 +68,9 @@ contract NonfungiblePositionManager is
     /// @dev The address of the token descriptor contract, which handles generating token URIs for position tokens
     address private immutable _tokenDescriptor;
 
-    constructor(address _factory, address _WETH9, address _tokenDescriptor_, address _manager)
-        ERC721Permit("Thruster Positions NFT", "THRUST-POS", "1")
+    constructor(address _factory, address _WETH9, address _tokenDescriptor_)
+        ERC721Permit("Uniswap V3 Positions NFT-V1", "UNI-V3-POS", "1")
         PeripheryImmutableState(_factory, _WETH9)
-        ThrusterGas(_manager)
     {
         _tokenDescriptor = _tokenDescriptor_;
     }
@@ -134,7 +131,7 @@ contract NonfungiblePositionManager is
         checkDeadline(params.deadline)
         returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
     {
-        IThrusterPool pool;
+        IUniswapV3Pool pool;
         (liquidity, amount0, amount1, pool) = addLiquidity(
             AddLiquidityParams({
                 token0: params.token0,
@@ -151,31 +148,29 @@ contract NonfungiblePositionManager is
         );
 
         _mint(params.recipient, (tokenId = _nextId++));
-        {
-            // avoid stack too deep
-            bytes32 positionKey = PositionKey.compute(address(this), params.tickLower, params.tickUpper);
-            (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,,) = pool.positions(positionKey);
 
-            // idempotent set
-            uint80 poolId = cachePoolKey(
-                address(pool), PoolAddress.PoolKey({token0: params.token0, token1: params.token1, fee: params.fee})
-            );
+        bytes32 positionKey = PositionKey.compute(address(this), params.tickLower, params.tickUpper);
+        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128,,) = pool.positions(positionKey);
 
-            _positions[tokenId] = Position({
-                nonce: 0,
-                operator: address(0),
-                poolId: poolId,
-                tickLower: params.tickLower,
-                tickUpper: params.tickUpper,
-                liquidity: liquidity,
-                feeGrowthInside0LastX128: feeGrowthInside0LastX128,
-                feeGrowthInside1LastX128: feeGrowthInside1LastX128,
-                tokensOwed0: 0,
-                tokensOwed1: 0
-            });
-        }
+        // idempotent set
+        uint80 poolId = cachePoolKey(
+            address(pool), PoolAddress.PoolKey({token0: params.token0, token1: params.token1, fee: params.fee})
+        );
 
-        emit IncreaseLiquidity(tokenId, liquidity, amount0, amount1, params.tickLower, params.tickUpper, address(pool));
+        _positions[tokenId] = Position({
+            nonce: 0,
+            operator: address(0),
+            poolId: poolId,
+            tickLower: params.tickLower,
+            tickUpper: params.tickUpper,
+            liquidity: liquidity,
+            feeGrowthInside0LastX128: feeGrowthInside0LastX128,
+            feeGrowthInside1LastX128: feeGrowthInside1LastX128,
+            tokensOwed0: 0,
+            tokensOwed1: 0
+        });
+
+        emit IncreaseLiquidity(tokenId, liquidity, amount0, amount1);
     }
 
     modifier isAuthorizedForToken(uint256 tokenId) {
@@ -203,7 +198,7 @@ contract NonfungiblePositionManager is
 
         PoolAddress.PoolKey memory poolKey = _poolIdToPoolKey[position.poolId];
 
-        IThrusterPool pool;
+        IUniswapV3Pool pool;
         (liquidity, amount0, amount1, pool) = addLiquidity(
             AddLiquidityParams({
                 token0: poolKey.token0,
@@ -239,9 +234,7 @@ contract NonfungiblePositionManager is
         position.feeGrowthInside1LastX128 = feeGrowthInside1LastX128;
         position.liquidity += liquidity;
 
-        emit IncreaseLiquidity(
-            params.tokenId, liquidity, amount0, amount1, position.tickLower, position.tickUpper, address(pool)
-        );
+        emit IncreaseLiquidity(params.tokenId, liquidity, amount0, amount1);
     }
 
     /// @inheritdoc INonfungiblePositionManager
@@ -260,7 +253,7 @@ contract NonfungiblePositionManager is
         require(positionLiquidity >= params.liquidity);
 
         PoolAddress.PoolKey memory poolKey = _poolIdToPoolKey[position.poolId];
-        IThrusterPool pool = IThrusterPool(PoolAddress.computeAddress(factory, poolKey));
+        IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
         (amount0, amount1) = pool.burn(position.tickLower, position.tickUpper, params.liquidity);
 
         require(amount0 >= params.amount0Min && amount1 >= params.amount1Min, "Price slippage check");
@@ -287,9 +280,7 @@ contract NonfungiblePositionManager is
         // subtraction is safe because we checked positionLiquidity is gte params.liquidity
         position.liquidity = positionLiquidity - params.liquidity;
 
-        emit DecreaseLiquidity(
-            params.tokenId, params.liquidity, amount0, amount1, position.tickLower, position.tickUpper, address(pool)
-        );
+        emit DecreaseLiquidity(params.tokenId, params.liquidity, amount0, amount1);
     }
 
     /// @inheritdoc INonfungiblePositionManager
@@ -308,7 +299,7 @@ contract NonfungiblePositionManager is
 
         PoolAddress.PoolKey memory poolKey = _poolIdToPoolKey[position.poolId];
 
-        IThrusterPool pool = IThrusterPool(PoolAddress.computeAddress(factory, poolKey));
+        IUniswapV3Pool pool = IUniswapV3Pool(PoolAddress.computeAddress(factory, poolKey));
 
         (uint128 tokensOwed0, uint128 tokensOwed1) = (position.tokensOwed0, position.tokensOwed1);
 
@@ -347,15 +338,7 @@ contract NonfungiblePositionManager is
         // instead of the actual amount so we can burn the token
         (position.tokensOwed0, position.tokensOwed1) = (tokensOwed0 - amount0Collect, tokensOwed1 - amount1Collect);
 
-        emit Collect(
-            params.tokenId,
-            recipient,
-            amount0Collect,
-            amount1Collect,
-            position.tickLower,
-            position.tickUpper,
-            address(pool)
-        );
+        emit Collect(params.tokenId, recipient, amount0Collect, amount1Collect);
     }
 
     /// @inheritdoc INonfungiblePositionManager
