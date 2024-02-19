@@ -40,10 +40,6 @@ interface IThrusterPoolFactory {
     /// @return The address of the factory owner
     function owner() external view returns (address);
 
-    /// @notice Returns the current points admin of the factory
-    /// @return The address of the points admin
-    function pointsAdmin() external view returns (address);
-
     /// @notice Returns the current deployer of the factory
     /// @return The address of the pool deployer
     function deployer() external view returns (address);

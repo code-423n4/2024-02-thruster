@@ -113,6 +113,4 @@ interface IThrusterPoolState {
             uint160 secondsPerLiquidityCumulativeX128,
             bool initialized
         );
-    
-    function blastPointsAdmin() external view returns (address);
 }
