@@ -2,12 +2,11 @@
 pragma solidity >=0.7.6;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-
-import "contracts/libraries/Base64.sol";
-import "contracts/libraries/BitMath.sol";
+import "@uniswap/v3-core/contracts/libraries/BitMath.sol";
+import "base64-sol/base64.sol";
 
 /// @title NFTSVG
-/// @notice Provides a function for generating an SVG associated with a Thruster NFT
+/// @notice Provides a function for generating an SVG associated with a Uniswap NFT
 library NFTSVG {
     using Strings for uint256;
 

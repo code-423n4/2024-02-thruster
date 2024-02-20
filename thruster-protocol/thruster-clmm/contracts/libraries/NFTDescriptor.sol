@@ -2,18 +2,16 @@
 pragma solidity >=0.7.0;
 pragma abicoder v2;
 
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-core/contracts/libraries/BitMath.sol";
+import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-
-import "interfaces/IThrusterPool.sol";
-
-import "contracts/libraries/Base64.sol";
-import "contracts/libraries/BitMath.sol";
-import "contracts/libraries/FullMath.sol";
-import "contracts/libraries/HexStrings.sol";
-import "contracts/libraries/NFTSVG.sol";
-import "contracts/libraries/TickMath.sol";
+import "base64-sol/base64.sol";
+import "./HexStrings.sol";
+import "./NFTSVG.sol";
 
 library NFTDescriptor {
     using TickMath for int24;
@@ -110,12 +108,12 @@ library NFTDescriptor {
     ) private pure returns (string memory) {
         return string(
             abi.encodePacked(
-                "This NFT represents a liquidity position in a Thruster",
+                "This NFT represents a liquidity position in a Uniswap V3 ",
                 quoteTokenSymbol,
                 "-",
                 baseTokenSymbol,
                 " pool. ",
-                "The owner of this NFT can thrust, modify or redeem the position.\\n",
+                "The owner of this NFT can modify or redeem the position.\\n",
                 "\\nPool Address: ",
                 poolAddress,
                 "\\n",
@@ -156,7 +154,7 @@ library NFTDescriptor {
     {
         return string(
             abi.encodePacked(
-                "Thruster - ",
+                "Uniswap - ",
                 feeTier,
                 " - ",
                 escapeQuotes(params.quoteTokenSymbol),

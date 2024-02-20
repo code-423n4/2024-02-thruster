@@ -296,8 +296,4 @@ contract ThrusterPair is IThrusterPair, IThrusterERC20, ThrusterYield {
         require(recoveredAddress != address(0) && recoveredAddress == owner, "ThrusterERC20: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
-
-    function blastPointsAdmin() external view returns (address) {
-        return IThrusterFactory(factory).pointsAdmin();
-    }
 }

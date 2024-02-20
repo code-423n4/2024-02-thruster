@@ -1,35 +1,27 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.7.6;
 
-import "interfaces/IThrusterPoolFactory.sol";
-import "interfaces/IThrusterPoolDeployer.sol";
+import "./interfaces/IUniswapV3Factory.sol";
 
-import "contracts/NoDelegateCall.sol";
-import "contracts/ThrusterGas.sol";
-import "contracts/ThrusterPool.sol";
+import "./UniswapV3PoolDeployer.sol";
+import "./NoDelegateCall.sol";
 
-/// @title Canonical Thruster CLMM factory
-/// @notice Deploys Thruster CLMM pools and manages ownership and control over pool protocol fees
-contract ThrusterPoolFactory is IThrusterPoolFactory, NoDelegateCall, ThrusterGas {
-    /// @inheritdoc IThrusterPoolFactory
+import "./UniswapV3Pool.sol";
+
+/// @title Canonical Uniswap V3 factory
+/// @notice Deploys Uniswap V3 pools and manages ownership and control over pool protocol fees
+contract UniswapV3Factory is IUniswapV3Factory, UniswapV3PoolDeployer, NoDelegateCall {
+    /// @inheritdoc IUniswapV3Factory
     address public override owner;
 
-    /// Points adminf or Blast points
-    address public override pointsAdmin;
-
-    /// @inheritdoc IThrusterPoolFactory
-    address public override deployer;
-
-    /// @inheritdoc IThrusterPoolFactory
+    /// @inheritdoc IUniswapV3Factory
     mapping(uint24 => int24) public override feeAmountTickSpacing;
-    /// @inheritdoc IThrusterPoolFactory
+    /// @inheritdoc IUniswapV3Factory
     mapping(address => mapping(address => mapping(uint24 => address))) public override getPool;
-    mapping(address => bool) public poolExists;
 
-    constructor(address _owner, address _pointsAdmin) ThrusterGas(_owner) {
-        owner = _owner;
-        emit OwnerChanged(address(0), _owner);
-        pointsAdmin = _pointsAdmin;
+    constructor() {
+        owner = msg.sender;
+        emit OwnerChanged(address(0), msg.sender);
 
         feeAmountTickSpacing[500] = 10;
         emit FeeAmountEnabled(500, 10);
@@ -39,9 +31,9 @@ contract ThrusterPoolFactory is IThrusterPoolFactory, NoDelegateCall, ThrusterGa
         emit FeeAmountEnabled(10000, 200);
     }
 
-    /// @inheritdoc IThrusterPoolFactory
+    /// @inheritdoc IUniswapV3Factory
     function createPool(address tokenA, address tokenB, uint24 fee)
-        public
+        external
         override
         noDelegateCall
         returns (address pool)
@@ -52,28 +44,21 @@ contract ThrusterPoolFactory is IThrusterPoolFactory, NoDelegateCall, ThrusterGa
         int24 tickSpacing = feeAmountTickSpacing[fee];
         require(tickSpacing != 0);
         require(getPool[token0][token1][fee] == address(0));
-        pool = IThrusterPoolDeployer(deployer).deploy(address(this), token0, token1, fee, tickSpacing);
+        pool = deploy(address(this), token0, token1, fee, tickSpacing);
         getPool[token0][token1][fee] = pool;
         // populate mapping in the reverse direction, deliberate choice to avoid the cost of comparing addresses
         getPool[token1][token0][fee] = pool;
-        poolExists[pool] = true;
         emit PoolCreated(token0, token1, fee, tickSpacing, pool);
     }
 
-    /// @inheritdoc IThrusterPoolFactory
+    /// @inheritdoc IUniswapV3Factory
     function setOwner(address _owner) external override {
         require(msg.sender == owner);
-        require(_owner != address(0));
         emit OwnerChanged(owner, _owner);
         owner = _owner;
     }
 
-    function setDeployer(address _deployer) external {
-        require(msg.sender == owner && deployer == address(0), "INVALID");
-        deployer = _deployer;
-    }
-
-    /// @inheritdoc IThrusterPoolFactory
+    /// @inheritdoc IUniswapV3Factory
     function enableFeeAmount(uint24 fee, int24 tickSpacing) public override {
         require(msg.sender == owner);
         require(fee < 1000000);
@@ -85,23 +70,5 @@ contract ThrusterPoolFactory is IThrusterPoolFactory, NoDelegateCall, ThrusterGa
 
         feeAmountTickSpacing[fee] = tickSpacing;
         emit FeeAmountEnabled(fee, tickSpacing);
-    }
-
-    function claimDeployerGas(address _recipient) external {
-        require(msg.sender == owner);
-        IThrusterPoolDeployer(deployer).claimGas(_recipient);
-    }
-
-    function emitSwap(
-        address sender,
-        address recipient,
-        int256 amount0,
-        int256 amount1,
-        uint160 sqrtPriceX96,
-        uint128 liquidity,
-        int24 tick
-    ) external override {
-        require(poolExists[msg.sender], "INVALID_POOL");
-        emit Swap(msg.sender, sender, recipient, amount0, amount1, sqrtPriceX96, liquidity, tick);
     }
 }

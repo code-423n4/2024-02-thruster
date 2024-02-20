@@ -2,22 +2,22 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import "interfaces/IThrusterPool.sol";
-import "interfaces/callback/IThrusterSwapCallback.sol";
-import "interfaces/IQuoter.sol";
+import "@uniswap/v3-core/contracts/libraries/SafeCast.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 
-import "contracts/base/PeripheryImmutableState.sol";
-import "contracts/libraries/CallbackValidation.sol";
-import "contracts/libraries/Path.sol";
-import "contracts/libraries/PoolAddress.sol";
-import "contracts/libraries/SafeCast.sol";
-import "contracts/libraries/TickMath.sol";
+import "../interfaces/IQuoter.sol";
+import "../base/PeripheryImmutableState.sol";
+import "../libraries/Path.sol";
+import "../libraries/PoolAddress.sol";
+import "../libraries/CallbackValidation.sol";
 
 /// @title Provides quotes for swaps
 /// @notice Allows getting the expected amount out or amount in for a given swap without executing the swap
 /// @dev These functions are not gas efficient and should _not_ be called on chain. Instead, optimistically execute
 /// the swap and check the amounts in the callback.
-contract Quoter is IQuoter, IThrusterSwapCallback, PeripheryImmutableState {
+contract Quoter is IQuoter, IUniswapV3SwapCallback, PeripheryImmutableState {
     using Path for bytes;
     using SafeCast for uint256;
 
@@ -26,12 +26,16 @@ contract Quoter is IQuoter, IThrusterSwapCallback, PeripheryImmutableState {
 
     constructor(address _factory, address _WETH9) PeripheryImmutableState(_factory, _WETH9) {}
 
-    function getPool(address tokenA, address tokenB, uint24 fee) private view returns (IThrusterPool) {
-        return IThrusterPool(PoolAddress.computeAddress(factory, PoolAddress.getPoolKey(tokenA, tokenB, fee)));
+    function getPool(address tokenA, address tokenB, uint24 fee) private view returns (IUniswapV3Pool) {
+        return IUniswapV3Pool(PoolAddress.computeAddress(factory, PoolAddress.getPoolKey(tokenA, tokenB, fee)));
     }
 
-    /// @inheritdoc IThrusterSwapCallback
-    function thrusterSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes memory path) external view override {
+    /// @inheritdoc IUniswapV3SwapCallback
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes memory path)
+        external
+        view
+        override
+    {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
         (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
         CallbackValidation.verifyCallback(factory, tokenIn, tokenOut, fee);

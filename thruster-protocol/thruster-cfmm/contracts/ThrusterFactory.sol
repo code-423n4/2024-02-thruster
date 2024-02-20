@@ -10,7 +10,6 @@ contract ThrusterFactory is IThrusterFactory, ThrusterGas {
     uint256 public yieldCut;
     address public yieldTo;
     address public yieldToSetter;
-    address public pointsAdmin;
 
     mapping(address => mapping(address => address)) public getPair;
     mapping(address => bool) public pairExists;
@@ -32,9 +31,8 @@ contract ThrusterFactory is IThrusterFactory, ThrusterGas {
     event Sync(address indexed pair, uint112 reserve0, uint112 reserve1);
     event Transfer(address indexed pair, address indexed from, address indexed to, uint256 value);
 
-    constructor(address _yieldToSetter, address _pointsAdmin) public ThrusterGas(_yieldToSetter) {
+    constructor(address _yieldToSetter) public ThrusterGas(_yieldToSetter) {
         yieldToSetter = _yieldToSetter;
-        pointsAdmin = _pointsAdmin;
     }
 
     function allPairsLength() external view returns (uint256) {

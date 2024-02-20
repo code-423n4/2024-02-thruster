@@ -2,22 +2,25 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/lib/contracts/libraries/SafeERC20Namer.sol";
 
-import "interfaces/IERC20Metadata.sol";
-import "interfaces/INonfungiblePositionManager.sol";
-import "interfaces/INonfungibleTokenPositionDescriptor.sol";
-import "interfaces/IThrusterPool.sol";
-
-import "contracts/libraries/ChainId.sol";
-import "contracts/libraries/NFTDescriptor.sol";
-import "contracts/libraries/PoolAddress.sol";
-import "contracts/libraries/TokenRatioSortOrder.sol";
+import "./libraries/ChainId.sol";
+import "./interfaces/INonfungiblePositionManager.sol";
+import "./interfaces/INonfungibleTokenPositionDescriptor.sol";
+import "./interfaces/IERC20Metadata.sol";
+import "./libraries/PoolAddress.sol";
+import "./libraries/NFTDescriptor.sol";
+import "./libraries/TokenRatioSortOrder.sol";
 
 /// @title Describes NFT token positions
 /// @notice Produces a string containing the data URI for a JSON metadata string
 contract NonfungibleTokenPositionDescriptor is INonfungibleTokenPositionDescriptor {
-    address private constant USDB = 0x4200000000000000000000000000000000000022;
+    address private constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address private constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address private constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address private constant TBTC = 0x8dAEBADE922dF735c38C80C7eBD708Af50815fAa;
+    address private constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
 
     address public immutable WETH9;
     /// @dev A null-terminated string
@@ -51,7 +54,7 @@ contract NonfungibleTokenPositionDescriptor is INonfungibleTokenPositionDescript
         (,, address token0, address token1, uint24 fee, int24 tickLower, int24 tickUpper,,,,,) =
             positionManager.positions(tokenId);
 
-        IThrusterPool pool = IThrusterPool(
+        IUniswapV3Pool pool = IUniswapV3Pool(
             PoolAddress.computeAddress(
                 positionManager.factory(), PoolAddress.PoolKey({token0: token0, token1: token1, fee: fee})
             )
@@ -95,8 +98,16 @@ contract NonfungibleTokenPositionDescriptor is INonfungibleTokenPositionDescript
             return TokenRatioSortOrder.DENOMINATOR;
         }
         if (chainId == 1) {
-            if (token == USDB) {
+            if (token == USDC) {
                 return TokenRatioSortOrder.NUMERATOR_MOST;
+            } else if (token == USDT) {
+                return TokenRatioSortOrder.NUMERATOR_MORE;
+            } else if (token == DAI) {
+                return TokenRatioSortOrder.NUMERATOR;
+            } else if (token == TBTC) {
+                return TokenRatioSortOrder.DENOMINATOR_MORE;
+            } else if (token == WBTC) {
+                return TokenRatioSortOrder.DENOMINATOR_MOST;
             } else {
                 return 0;
             }

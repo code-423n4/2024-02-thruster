@@ -2,18 +2,17 @@
 pragma solidity >=0.7.5;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721Metadata.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Enumerable.sol";
+import '@openzeppelin/contracts/token/ERC721/IERC721Metadata.sol';
+import '@openzeppelin/contracts/token/ERC721/IERC721Enumerable.sol';
 
-import "interfaces/IERC721Permit.sol";
-import "interfaces/IPeripheryPayments.sol";
-import "interfaces/IPeripheryImmutableState.sol";
-import "interfaces/IPoolInitializer.sol";
-
-import "contracts/libraries/PoolAddress.sol";
+import './IPoolInitializer.sol';
+import './IERC721Permit.sol';
+import './IPeripheryPayments.sol';
+import './IPeripheryImmutableState.sol';
+import '../libraries/PoolAddress.sol';
 
 /// @title Non-fungible token for positions
-/// @notice Wraps Thruster CLMM positions in a non-fungible token interface which allows for them to be transferred
+/// @notice Wraps Uniswap V3 positions in a non-fungible token interface which allows for them to be transferred
 /// and authorized.
 interface INonfungiblePositionManager is
     IPoolInitializer,
@@ -29,24 +28,20 @@ interface INonfungiblePositionManager is
     /// @param liquidity The amount by which liquidity for the NFT position was increased
     /// @param amount0 The amount of token0 that was paid for the increase in liquidity
     /// @param amount1 The amount of token1 that was paid for the increase in liquidity
-    /// @param tickLower The lower end of the tick range for the position
-    /// @param tickUpper The higher end of the tick range for the position
-    event IncreaseLiquidity(uint256 indexed tokenId, uint128 liquidity, uint256 amount0, uint256 amount1, int24 tickLower, int24 tickUpper, address pool);
+    event IncreaseLiquidity(uint256 indexed tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
     /// @notice Emitted when liquidity is decreased for a position NFT
     /// @param tokenId The ID of the token for which liquidity was decreased
     /// @param liquidity The amount by which liquidity for the NFT position was decreased
     /// @param amount0 The amount of token0 that was accounted for the decrease in liquidity
     /// @param amount1 The amount of token1 that was accounted for the decrease in liquidity
-    /// @param tickLower The lower end of the tick range for the position
-    /// @param tickUpper The higher end of the tick range for the position
-    event DecreaseLiquidity(uint256 indexed tokenId, uint128 liquidity, uint256 amount0, uint256 amount1, int24 tickLower, int24 tickUpper, address pool);
+    event DecreaseLiquidity(uint256 indexed tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
     /// @notice Emitted when tokens are collected for a position NFT
     /// @dev The amounts reported may not be exactly equivalent to the amounts transferred, due to rounding behavior
     /// @param tokenId The ID of the token for which underlying tokens were collected
     /// @param recipient The address of the account that received the collected tokens
     /// @param amount0 The amount of token0 owed to the position that was collected
     /// @param amount1 The amount of token1 owed to the position that was collected
-    event Collect(uint256 indexed tokenId, address recipient, uint256 amount0, uint256 amount1, int24 tickLower, int24 tickUpper, address pool);
+    event Collect(uint256 indexed tokenId, address recipient, uint256 amount0, uint256 amount1);
 
     /// @notice Returns the position information associated with a given token ID.
     /// @dev Throws if the token ID is not valid.
@@ -106,7 +101,12 @@ interface INonfungiblePositionManager is
     function mint(MintParams calldata params)
         external
         payable
-        returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
+        returns (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        );
 
     struct IncreaseLiquidityParams {
         uint256 tokenId;
@@ -130,7 +130,11 @@ interface INonfungiblePositionManager is
     function increaseLiquidity(IncreaseLiquidityParams calldata params)
         external
         payable
-        returns (uint128 liquidity, uint256 amount0, uint256 amount1);
+        returns (
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        );
 
     struct DecreaseLiquidityParams {
         uint256 tokenId;

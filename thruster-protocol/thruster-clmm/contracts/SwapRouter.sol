@@ -2,32 +2,30 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import "interfaces/IThrusterPool.sol";
-import "interfaces/ISwapRouter.sol";
-import "interfaces/external/IWETH9.sol";
+import "@uniswap/v3-core/contracts/libraries/SafeCast.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
-import "contracts/ThrusterGas.sol";
-import "contracts/base/Multicall.sol";
-import "contracts/base/PeripheryImmutableState.sol";
-import "contracts/base/PeripheryPaymentsWithFee.sol";
-import "contracts/base/PeripheryValidation.sol";
-import "contracts/base/SelfPermit.sol";
-import "contracts/libraries/CallbackValidation.sol";
-import "contracts/libraries/Path.sol";
-import "contracts/libraries/PoolAddress.sol";
-import "contracts/libraries/SafeCast.sol";
-import "contracts/libraries/TickMath.sol";
+import "./interfaces/ISwapRouter.sol";
+import "./base/PeripheryImmutableState.sol";
+import "./base/PeripheryValidation.sol";
+import "./base/PeripheryPaymentsWithFee.sol";
+import "./base/Multicall.sol";
+import "./base/SelfPermit.sol";
+import "./libraries/Path.sol";
+import "./libraries/PoolAddress.sol";
+import "./libraries/CallbackValidation.sol";
+import "./interfaces/external/IWETH9.sol";
 
-/// @title Thruster CLMM Swap Router
-/// @notice Router for stateless execution of swaps against Thruster CLMM
+/// @title Uniswap V3 Swap Router
+/// @notice Router for stateless execution of swaps against Uniswap V3
 contract SwapRouter is
     ISwapRouter,
     PeripheryImmutableState,
     PeripheryValidation,
     PeripheryPaymentsWithFee,
     Multicall,
-    SelfPermit,
-    ThrusterGas
+    SelfPermit
 {
     using Path for bytes;
     using SafeCast for uint256;
@@ -39,14 +37,11 @@ contract SwapRouter is
     /// @dev Transient storage variable used for returning the computed amount in for an exact output swap.
     uint256 private amountInCached = DEFAULT_AMOUNT_IN_CACHED;
 
-    constructor(address _factory, address _WETH9, address _manager)
-        PeripheryImmutableState(_factory, _WETH9)
-        ThrusterGas(_manager)
-    {}
+    constructor(address _factory, address _WETH9) PeripheryImmutableState(_factory, _WETH9) {}
 
     /// @dev Returns the pool for the given token pair and fee. The pool contract may or may not exist.
-    function getPool(address tokenA, address tokenB, uint24 fee) private view returns (IThrusterPool) {
-        return IThrusterPool(PoolAddress.computeAddress(factory, PoolAddress.getPoolKey(tokenA, tokenB, fee)));
+    function getPool(address tokenA, address tokenB, uint24 fee) private view returns (IUniswapV3Pool) {
+        return IUniswapV3Pool(PoolAddress.computeAddress(factory, PoolAddress.getPoolKey(tokenA, tokenB, fee)));
     }
 
     struct SwapCallbackData {
@@ -54,8 +49,8 @@ contract SwapRouter is
         address payer;
     }
 
-    /// @inheritdoc IThrusterSwapCallback
-    function thrusterSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external override {
+    /// @inheritdoc IUniswapV3SwapCallback
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata _data) external override {
         require(amount0Delta > 0 || amount1Delta > 0); // swaps entirely within 0-liquidity regions are not supported
         SwapCallbackData memory data = abi.decode(_data, (SwapCallbackData));
         (address tokenIn, address tokenOut, uint24 fee) = data.path.decodeFirstPool();

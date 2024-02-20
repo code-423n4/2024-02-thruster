@@ -2,10 +2,8 @@
 pragma solidity =0.7.6;
 pragma abicoder v2;
 
-import "contracts/ThrusterGas.sol";
-
-/// @notice A fork of Multicall2 specifically tailored for Thruster
-contract ThrusterMulticall is ThrusterGas {
+/// @notice A fork of Multicall2 specifically tailored for the Uniswap Interface
+contract UniswapInterfaceMulticall {
     struct Call {
         address target;
         uint256 gasLimit;
@@ -17,8 +15,6 @@ contract ThrusterMulticall is ThrusterGas {
         uint256 gasUsed;
         bytes returnData;
     }
-
-    constructor(address _manager) ThrusterGas(_manager) {}
 
     function getCurrentBlockTimestamp() public view returns (uint256 timestamp) {
         timestamp = block.timestamp;

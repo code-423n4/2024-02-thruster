@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-/// @title The interface for the Thruster CLMM Factory
-/// @notice The Thruster CLMM Factory facilitates creation of Thruster CLMM pools and control over the protocol fees
-interface IThrusterPoolFactory {
+/// @title The interface for the Uniswap V3 Factory
+/// @notice The Uniswap V3 Factory facilitates creation of Uniswap V3 pools and control over the protocol fees
+interface IUniswapV3Factory {
     /// @notice Emitted when the owner of the factory is changed
     /// @param oldOwner The owner before the owner was changed
     /// @param newOwner The owner after the owner was changed
@@ -16,7 +16,11 @@ interface IThrusterPoolFactory {
     /// @param tickSpacing The minimum number of ticks between initialized ticks
     /// @param pool The address of the created pool
     event PoolCreated(
-        address indexed token0, address indexed token1, uint24 indexed fee, int24 tickSpacing, address pool
+        address indexed token0,
+        address indexed token1,
+        uint24 indexed fee,
+        int24 tickSpacing,
+        address pool
     );
 
     /// @notice Emitted when a new fee amount is enabled for pool creation via the factory
@@ -24,29 +28,10 @@ interface IThrusterPoolFactory {
     /// @param tickSpacing The minimum number of ticks between initialized ticks for pools created with the given fee
     event FeeAmountEnabled(uint24 indexed fee, int24 indexed tickSpacing);
 
-    event Swap(
-        address indexed pool,
-        address indexed sender,
-        address indexed recipient,
-        int256 amount0,
-        int256 amount1,
-        uint160 sqrtPriceX96,
-        uint128 liquidity,
-        int24 tick
-    );
-
     /// @notice Returns the current owner of the factory
     /// @dev Can be changed by the current owner via setOwner
     /// @return The address of the factory owner
     function owner() external view returns (address);
-
-    /// @notice Returns the current points admin of the factory
-    /// @return The address of the points admin
-    function pointsAdmin() external view returns (address);
-
-    /// @notice Returns the current deployer of the factory
-    /// @return The address of the pool deployer
-    function deployer() external view returns (address);
 
     /// @notice Returns the tick spacing for a given fee amount, if enabled, or 0 if not enabled
     /// @dev A fee amount can never be removed, so this value should be hard coded or cached in the calling context
@@ -60,7 +45,11 @@ interface IThrusterPoolFactory {
     /// @param tokenB The contract address of the other token
     /// @param fee The fee collected upon every swap in the pool, denominated in hundredths of a bip
     /// @return pool The pool address
-    function getPool(address tokenA, address tokenB, uint24 fee) external view returns (address pool);
+    function getPool(
+        address tokenA,
+        address tokenB,
+        uint24 fee
+    ) external view returns (address pool);
 
     /// @notice Creates a pool for the given two tokens and fee
     /// @param tokenA One of the two tokens in the desired pool
@@ -70,7 +59,11 @@ interface IThrusterPoolFactory {
     /// from the fee. The call will revert if the pool already exists, the fee is invalid, or the token arguments
     /// are invalid.
     /// @return pool The address of the newly created pool
-    function createPool(address tokenA, address tokenB, uint24 fee) external returns (address pool);
+    function createPool(
+        address tokenA,
+        address tokenB,
+        uint24 fee
+    ) external returns (address pool);
 
     /// @notice Updates the owner of the factory
     /// @dev Must be called by the current owner
@@ -82,14 +75,4 @@ interface IThrusterPoolFactory {
     /// @param fee The fee amount to enable, denominated in hundredths of a bip (i.e. 1e-6)
     /// @param tickSpacing The spacing between ticks to be enforced for all pools created with the given fee amount
     function enableFeeAmount(uint24 fee, int24 tickSpacing) external;
-
-    function emitSwap(
-        address sender,
-        address recipient,
-        int256 amount0,
-        int256 amount1,
-        uint160 sqrtPriceX96,
-        uint128 liquidity,
-        int24 tick
-    ) external;
 }

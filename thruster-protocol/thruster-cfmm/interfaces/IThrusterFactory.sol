@@ -28,6 +28,4 @@ interface IThrusterFactory {
         address to
     ) external;
     function emitTransfer(address from, address to, uint256 value) external;
-
-    function pointsAdmin() external view returns (address);
 }

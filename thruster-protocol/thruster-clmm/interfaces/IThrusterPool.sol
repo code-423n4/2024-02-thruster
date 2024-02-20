@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-import "interfaces/pool/IThrusterPoolActions.sol";
-import "interfaces/pool/IThrusterPoolDerivedState.sol";
-import "interfaces/pool/IThrusterPoolEvents.sol";
-import "interfaces/pool/IThrusterPoolImmutables.sol";
-import "interfaces/pool/IThrusterPoolOwnerActions.sol";
-import "interfaces/pool/IThrusterPoolState.sol";
+import './pool/IUniswapV3PoolImmutables.sol';
+import './pool/IUniswapV3PoolState.sol';
+import './pool/IUniswapV3PoolDerivedState.sol';
+import './pool/IUniswapV3PoolActions.sol';
+import './pool/IUniswapV3PoolOwnerActions.sol';
+import './pool/IUniswapV3PoolEvents.sol';
 
-/// @title The interface for a Thruster CLMM Pool
-/// @notice A Thruster CLMM pool facilitates swapping and automated market making between any two assets that strictly conform
+/// @title The interface for a Uniswap V3 Pool
+/// @notice A Uniswap pool facilitates swapping and automated market making between any two assets that strictly conform
 /// to the ERC20 specification
 /// @dev The pool interface is broken up into many smaller pieces
-interface IThrusterPool is
-    IThrusterPoolImmutables,
-    IThrusterPoolState,
-    IThrusterPoolDerivedState,
-    IThrusterPoolActions,
-    IThrusterPoolOwnerActions,
-    IThrusterPoolEvents
-{}
+interface IUniswapV3Pool is
+    IUniswapV3PoolImmutables,
+    IUniswapV3PoolState,
+    IUniswapV3PoolDerivedState,
+    IUniswapV3PoolActions,
+    IUniswapV3PoolOwnerActions,
+    IUniswapV3PoolEvents
+{
+
+}

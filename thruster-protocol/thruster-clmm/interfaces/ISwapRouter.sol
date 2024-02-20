@@ -2,11 +2,11 @@
 pragma solidity >=0.7.5;
 pragma abicoder v2;
 
-import "interfaces/callback/IThrusterSwapCallback.sol";
+import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol';
 
 /// @title Router token swapping functionality
-/// @notice Functions for swapping tokens via Thruster CLMM
-interface ISwapRouter is IThrusterSwapCallback {
+/// @notice Functions for swapping tokens via Uniswap V3
+interface ISwapRouter is IUniswapV3SwapCallback {
     struct ExactInputSingleParams {
         address tokenIn;
         address tokenOut;

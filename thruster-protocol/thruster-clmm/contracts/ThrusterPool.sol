@@ -1,34 +1,33 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity =0.7.6;
 
-import "interfaces/IERC20Minimal.sol";
-import "interfaces/IThrusterPoolFactory.sol";
-import "interfaces/IThrusterGauge.sol";
-import "interfaces/IThrusterPool.sol";
-import "interfaces/IThrusterPoolDeployer.sol";
-import "interfaces/callback/IThrusterMintCallback.sol";
-import "interfaces/callback/IThrusterSwapCallback.sol";
-import "interfaces/callback/IThrusterFlashCallback.sol";
+import "./interfaces/IUniswapV3Pool.sol";
 
-import "interfaces/IBlast.sol";
-import "interfaces/IERC20Rebasing.sol";
+import "./NoDelegateCall.sol";
 
-import "contracts/NoDelegateCall.sol";
-import "contracts/libraries/FixedPoint128.sol";
-import "contracts/libraries/FullMath.sol";
-import "contracts/libraries/LiquidityMath.sol";
-import "contracts/libraries/LowGasSafeMath.sol";
-import "contracts/libraries/Oracle.sol";
-import "contracts/libraries/Position.sol";
-import "contracts/libraries/SafeCast.sol";
-import "contracts/libraries/SqrtPriceMath.sol";
-import "contracts/libraries/SwapMath.sol";
-import "contracts/libraries/Tick.sol";
-import "contracts/libraries/TickMath.sol";
-import "contracts/libraries/TickBitmap.sol";
-import "contracts/libraries/TransferHelper.sol";
+import "./libraries/LowGasSafeMath.sol";
+import "./libraries/SafeCast.sol";
+import "./libraries/Tick.sol";
+import "./libraries/TickBitmap.sol";
+import "./libraries/Position.sol";
+import "./libraries/Oracle.sol";
 
-contract ThrusterPool is IThrusterPool, NoDelegateCall {
+import "./libraries/FullMath.sol";
+import "./libraries/FixedPoint128.sol";
+import "./libraries/TransferHelper.sol";
+import "./libraries/TickMath.sol";
+import "./libraries/LiquidityMath.sol";
+import "./libraries/SqrtPriceMath.sol";
+import "./libraries/SwapMath.sol";
+
+import "./interfaces/IUniswapV3PoolDeployer.sol";
+import "./interfaces/IUniswapV3Factory.sol";
+import "./interfaces/IERC20Minimal.sol";
+import "./interfaces/callback/IUniswapV3MintCallback.sol";
+import "./interfaces/callback/IUniswapV3SwapCallback.sol";
+import "./interfaces/callback/IUniswapV3FlashCallback.sol";
+
+contract UniswapV3Pool is IUniswapV3Pool, NoDelegateCall {
     using LowGasSafeMath for uint256;
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
@@ -39,23 +38,19 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
     using Position for Position.Info;
     using Oracle for Oracle.Observation[65535];
 
-    IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
-    IERC20Rebasing public constant USDB = IERC20Rebasing(0x4200000000000000000000000000000000000022);
-    IERC20Rebasing public constant WETHB = IERC20Rebasing(0x4200000000000000000000000000000000000023);
-
-    /// @inheritdoc IThrusterPoolImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override factory;
-    /// @inheritdoc IThrusterPoolImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override token0;
-    /// @inheritdoc IThrusterPoolImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     address public immutable override token1;
-    /// @inheritdoc IThrusterPoolImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     uint24 public immutable override fee;
 
-    /// @inheritdoc IThrusterPoolImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     int24 public immutable override tickSpacing;
 
-    /// @inheritdoc IThrusterPoolImmutables
+    /// @inheritdoc IUniswapV3PoolImmutables
     uint128 public immutable override maxLiquidityPerTick;
 
     struct Slot0 {
@@ -75,13 +70,13 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         // whether the pool is locked
         bool unlocked;
     }
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
 
     Slot0 public override slot0;
 
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     uint256 public override feeGrowthGlobal0X128;
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     uint256 public override feeGrowthGlobal1X128;
 
     // accumulated protocol fees in token0/token1 units
@@ -89,24 +84,21 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         uint128 token0;
         uint128 token1;
     }
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
 
     ProtocolFees public override protocolFees;
 
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     uint128 public override liquidity;
 
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(int24 => Tick.Info) public override ticks;
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(int16 => uint256) public override tickBitmap;
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     mapping(bytes32 => Position.Info) public override positions;
-    /// @inheritdoc IThrusterPoolState
+    /// @inheritdoc IUniswapV3PoolState
     Oracle.Observation[65535] public override observations;
-
-    // Gauges
-    address public gauge;
 
     /// @dev Mutually exclusive reentrancy protection into the pool to/from a method. This method also prevents entrance
     /// to a function before the pool is initialized. The reentrancy guard is required throughout the contract because
@@ -118,19 +110,15 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         slot0.unlocked = true;
     }
 
-    /// @dev Prevents calling a function from anyone except the address returned by IThrusterPoolFactory#owner()
+    /// @dev Prevents calling a function from anyone except the address returned by IUniswapV3Factory#owner()
     modifier onlyFactoryOwner() {
-        require(msg.sender == IThrusterPoolFactory(factory).owner());
+        require(msg.sender == IUniswapV3Factory(factory).owner());
         _;
     }
 
     constructor() {
         int24 _tickSpacing;
-        BLAST.configureClaimableGas();
-        BLAST.configureClaimableYield();
-        USDB.configure(YieldMode.CLAIMABLE);
-        WETHB.configure(YieldMode.CLAIMABLE);
-        (factory, token0, token1, fee, _tickSpacing) = IThrusterPoolDeployer(msg.sender).parameters();
+        (factory, token0, token1, fee, _tickSpacing) = IUniswapV3PoolDeployer(msg.sender).parameters();
         tickSpacing = _tickSpacing;
 
         maxLiquidityPerTick = Tick.tickSpacingToMaxLiquidityPerTick(_tickSpacing);
@@ -141,6 +129,11 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         require(tickLower < tickUpper, "TLU");
         require(tickLower >= TickMath.MIN_TICK, "TLM");
         require(tickUpper <= TickMath.MAX_TICK, "TUM");
+    }
+
+    /// @dev Returns the block timestamp truncated to 32 bits, i.e. mod 2**32. This method is overridden in tests.
+    function _blockTimestamp() internal view virtual returns (uint32) {
+        return uint32(block.timestamp); // truncation is desired
     }
 
     /// @dev Get the pool's balance of token0
@@ -163,7 +156,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         return abi.decode(data, (uint256));
     }
 
-    /// @inheritdoc IThrusterPoolDerivedState
+    /// @inheritdoc IUniswapV3PoolDerivedState
     function snapshotCumulativesInside(int24 tickLower, int24 tickUpper)
         external
         view
@@ -211,7 +204,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
                 secondsOutsideLower - secondsOutsideUpper
             );
         } else if (_slot0.tick < tickUpper) {
-            uint32 time = uint32(block.timestamp);
+            uint32 time = _blockTimestamp();
             (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
                 time, 0, _slot0.tick, _slot0.observationIndex, liquidity, _slot0.observationCardinality
             );
@@ -230,7 +223,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         }
     }
 
-    /// @inheritdoc IThrusterPoolDerivedState
+    /// @inheritdoc IUniswapV3PoolDerivedState
     function observe(uint32[] calldata secondsAgos)
         external
         view
@@ -239,16 +232,11 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s)
     {
         return observations.observe(
-            uint32(block.timestamp),
-            secondsAgos,
-            slot0.tick,
-            slot0.observationIndex,
-            liquidity,
-            slot0.observationCardinality
+            _blockTimestamp(), secondsAgos, slot0.tick, slot0.observationIndex, liquidity, slot0.observationCardinality
         );
     }
 
-    /// @inheritdoc IThrusterPoolActions
+    /// @inheritdoc IUniswapV3PoolActions
     function increaseObservationCardinalityNext(uint16 observationCardinalityNext)
         external
         override
@@ -264,14 +252,14 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         }
     }
 
-    /// @inheritdoc IThrusterPoolActions
+    /// @inheritdoc IUniswapV3PoolActions
     /// @dev not locked because it initializes unlocked
     function initialize(uint160 sqrtPriceX96) external override {
         require(slot0.sqrtPriceX96 == 0, "AI");
 
         int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);
 
-        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(uint32(block.timestamp));
+        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());
 
         slot0 = Slot0({
             sqrtPriceX96: sqrtPriceX96,
@@ -328,7 +316,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
                 // write an oracle entry
                 (slot0.observationIndex, slot0.observationCardinality) = observations.write(
                     _slot0.observationIndex,
-                    uint32(block.timestamp),
+                    _blockTimestamp(),
                     _slot0.tick,
                     liquidityBefore,
                     _slot0.observationCardinality,
@@ -373,7 +361,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         bool flippedLower;
         bool flippedUpper;
         if (liquidityDelta != 0) {
-            uint32 time = uint32(block.timestamp);
+            uint32 time = _blockTimestamp();
             (int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128) = observations.observeSingle(
                 time, 0, slot0.tick, slot0.observationIndex, liquidity, slot0.observationCardinality
             );
@@ -427,7 +415,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         }
     }
 
-    /// @inheritdoc IThrusterPoolActions
+    /// @inheritdoc IUniswapV3PoolActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function mint(address recipient, int24 tickLower, int24 tickUpper, uint128 amount, bytes calldata data)
         external
@@ -452,14 +440,14 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         uint256 balance1Before;
         if (amount0 > 0) balance0Before = balance0();
         if (amount1 > 0) balance1Before = balance1();
-        IThrusterMintCallback(msg.sender).thrusterMintCallback(amount0, amount1, data);
+        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);
         if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), "M0");
         if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), "M1");
 
         emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);
     }
 
-    /// @inheritdoc IThrusterPoolActions
+    /// @inheritdoc IUniswapV3PoolActions
     function collect(
         address recipient,
         int24 tickLower,
@@ -485,7 +473,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         emit Collect(msg.sender, recipient, tickLower, tickUpper, amount0, amount1);
     }
 
-    /// @inheritdoc IThrusterPoolActions
+    /// @inheritdoc IUniswapV3PoolActions
     /// @dev noDelegateCall is applied indirectly via _modifyPosition
     function burn(int24 tickLower, int24 tickUpper, uint128 amount)
         external
@@ -563,7 +551,7 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         uint256 feeAmount;
     }
 
-    /// @inheritdoc IThrusterPoolActions
+    /// @inheritdoc IUniswapV3PoolActions
     function swap(
         address recipient,
         bool zeroForOne,
@@ -587,16 +575,12 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
 
         SwapCache memory cache = SwapCache({
             liquidityStart: liquidity,
-            blockTimestamp: uint32(block.timestamp),
+            blockTimestamp: _blockTimestamp(),
             feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),
             secondsPerLiquidityCumulativeX128: 0,
             tickCumulative: 0,
             computedLatestObservation: false
         });
-
-        if (address(gauge) != address(0)) {
-            IThrusterGauge(gauge).checkpoint(cache.blockTimestamp);
-        }
 
         bool exactInput = amountSpecified > 0;
 
@@ -677,11 +661,6 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
                         );
                         cache.computedLatestObservation = true;
                     }
-
-                    if (gauge != address(0)) {
-                        IThrusterGauge(gauge).cross(step.tickNext, zeroForOne);
-                    }
-
                     int128 liquidityNet = ticks.cross(
                         step.tickNext,
                         (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),
@@ -743,33 +722,78 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
             if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));
 
             uint256 balance0Before = balance0();
-            IThrusterSwapCallback(msg.sender).thrusterSwapCallback(amount0, amount1, data);
+            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
             require(balance0Before.add(uint256(amount0)) <= balance0(), "IIA");
         } else {
             if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));
 
             uint256 balance1Before = balance1();
-            IThrusterSwapCallback(msg.sender).thrusterSwapCallback(amount0, amount1, data);
+            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);
             require(balance1Before.add(uint256(amount1)) <= balance1(), "IIA");
         }
 
         emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);
-        IThrusterPoolFactory(factory).emitSwap(
-            msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick
-        );
         slot0.unlocked = true;
     }
 
-    /// @inheritdoc IThrusterPoolOwnerActions
+    /// @inheritdoc IUniswapV3PoolActions
+    function flash(address recipient, uint256 amount0, uint256 amount1, bytes calldata data)
+        external
+        override
+        lock
+        noDelegateCall
+    {
+        uint128 _liquidity = liquidity;
+        require(_liquidity > 0, "L");
+
+        uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
+        uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
+        uint256 balance0Before = balance0();
+        uint256 balance1Before = balance1();
+
+        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);
+        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);
+
+        IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);
+
+        uint256 balance0After = balance0();
+        uint256 balance1After = balance1();
+
+        require(balance0Before.add(fee0) <= balance0After, "F0");
+        require(balance1Before.add(fee1) <= balance1After, "F1");
+
+        // sub is safe because we know balanceAfter is gt balanceBefore by at least fee
+        uint256 paid0 = balance0After - balance0Before;
+        uint256 paid1 = balance1After - balance1Before;
+
+        if (paid0 > 0) {
+            uint8 feeProtocol0 = slot0.feeProtocol % 16;
+            uint256 fees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;
+            if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);
+            feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);
+        }
+        if (paid1 > 0) {
+            uint8 feeProtocol1 = slot0.feeProtocol >> 4;
+            uint256 fees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;
+            if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);
+            feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);
+        }
+
+        emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
+    }
+
+    /// @inheritdoc IUniswapV3PoolOwnerActions
     function setFeeProtocol(uint8 feeProtocol0, uint8 feeProtocol1) external override lock onlyFactoryOwner {
         require(
             (feeProtocol0 == 0 || (feeProtocol0 >= 4 && feeProtocol0 <= 10))
                 && (feeProtocol1 == 0 || (feeProtocol1 >= 4 && feeProtocol1 <= 10))
         );
+        uint8 feeProtocolOld = slot0.feeProtocol;
         slot0.feeProtocol = feeProtocol0 + (feeProtocol1 << 4);
+        emit SetFeeProtocol(feeProtocolOld % 16, feeProtocolOld >> 4, feeProtocol0, feeProtocol1);
     }
 
-    /// @inheritdoc IThrusterPoolOwnerActions
+    /// @inheritdoc IUniswapV3PoolOwnerActions
     function collectProtocol(address recipient, uint128 amount0Requested, uint128 amount1Requested)
         external
         override
@@ -792,28 +816,5 @@ contract ThrusterPool is IThrusterPool, NoDelegateCall {
         }
 
         emit CollectProtocol(msg.sender, recipient, amount0, amount1);
-    }
-
-    /// @inheritdoc IThrusterPoolOwnerActions
-    function setGauge(address _gauge) external override lock onlyFactoryOwner {
-        gauge = _gauge;
-        emit SetGauge(_gauge);
-    }
-
-    /// @inheritdoc IThrusterPoolOwnerActions
-    function claimYieldAll(address _recipient, uint256 _amountETH, uint256 _amountWETH, uint256 _amountUSDB)
-        external
-        override
-        onlyFactoryOwner
-        returns (uint256 amountETH, uint256 amountWETH, uint256 amountUSDB, uint256 amountGas)
-    {
-        amountETH = IBlast(BLAST).claimYield(address(this), _recipient, _amountETH);
-        amountWETH = IERC20Rebasing(WETHB).claim(_recipient, _amountWETH);
-        amountUSDB = IERC20Rebasing(USDB).claim(_recipient, _amountUSDB);
-        amountGas = IBlast(BLAST).claimMaxGas(address(this), _recipient);
-    }
-
-    function blastPointsAdmin() external view override returns (address) {
-        return IThrusterPoolFactory(factory).pointsAdmin();
     }
 }
